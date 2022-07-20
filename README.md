@@ -74,6 +74,16 @@ L.motion.polyline([[50,0], [60,10]], {
 }).addTo(map);
 ```
 
+To rotate the marker you need to properly setup motion-base angle on 90* north, so that it can be rotated to the movement direction.
+``` js
+L.motion.polyline([{"lat":50,"lng":0},{"lat":51.15611417450841,"lng":-2.1906730905175213}], {
+	color:"khaki"
+}, null, {
+	removeOnEnd: true,
+	icon: L.divIcon({html: "<i class='fa fa-plane fa-2x' aria-hidden='true' motion-base='-48'></i>", iconSize: L.point(19, 24)})
+}).motionDuration(7000)
+```
+
 ### Public methods
 
 #### L.motion.*
@@ -103,6 +113,26 @@ addLatLng(latLng) // - allows to add additional point in the end for the motion 
  // Returns marker (if markerOptions is passed on creation) to attach needed behavior.
  // Marker will be added to the map only during animation
 getMarker()
+```
+
+#### L.motion.seq
+``` js
+addLayer(layer, autostart) // to append layer to the end of sequence and autostart it if needed
+```
+
+Now we can add new layers to Seq object.
+- If it's not started yet, new layers will be added and prepared to start.
+- If it's running right now new layer will be added and wait it turn.
+- If it's completed, and you want to run new layer right now, additional parameter should be passed.
+``` js
+var planePolyline = L.motion.polyline(planeRoute).motionDuration(2000);
+
+// Build the Sequence Group:
+var seqGroup = L.motion.seq([
+	trackPolyline, shipPolyline
+]).addTo(map);
+
+seqGroup.addLayer(planePolyline, true);
 ```
 
 ### Motion Events
