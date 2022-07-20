@@ -31,8 +31,13 @@ L.Motion.Animate = {
 
 	initialize: function (latlngs, options, motionOptions, markerOptions) {
 		L.Util.setOptions(this, options);
-		this.motionOptions = L.Util.extend({}, this.motionOptions, motionOptions || {});
-		this.markerOptions = L.Util.extend({}, markerOptions || {});
+		if (motionOptions) {
+			this.motionOptions = L.Util.extend({}, this.motionOptions, motionOptions);
+		}
+
+		if (markerOptions) {
+			this.markerOptions = L.Util.extend({}, markerOptions);
+		}
 
 		this._bounds = L.latLngBounds();
 		this._linePoints = this._convertLatLngs(latlngs);
@@ -75,12 +80,14 @@ L.Motion.Animate = {
 		this._renderer._addPath(this);
 		if (this.__marker && this.markerOptions.showMarker) {
 			this.__marker.addTo(map);
-		}
 
-		if(this.__marker._icon && this.__marker._icon.children.length){
-			var baseRotationAngle = this.__marker._icon.children[0].getAttribute("motion-base");
-			if(baseRotationAngle){
-				this.__marker._icon.children[0].style.transform = "rotate(" + baseRotationAngle + "deg)";
+			if(this.__marker._icon && this.__marker._icon.children.length){
+				Array.from(this.__marker._icon.children).forEach(function(icon) {
+					var baseRotationAngle = icon.getAttribute("motion-base");
+					if (baseRotationAngle) {
+						icon.style.transform = "rotate(" + baseRotationAngle + "deg)";
+					}
+				});
 			}
 		}
 
@@ -115,10 +122,10 @@ L.Motion.Animate = {
 
 		if (durationRatio < 1) {
 			durationRatio = this.motionOptions.easing(durationRatio, ellapsedTime, 0, 1, this.motionOptions.duration);
-			var nextPoint = L.Motion.Utils.interpolateOnLine(this._map, this._linePoints, durationRatio);
+			var interpolatedLine = L.Motion.Utils.interpolateOnLine(this._map, this._linePoints, durationRatio);
 
-			L.Polyline.prototype.addLatLng.call(this, nextPoint.latLng);
-			this._drawMarker(nextPoint.latLng);
+			this.setLatLngs(interpolatedLine.traveledPath);
+			this._drawMarker(interpolatedLine.latLng);
 
 			this.__ellapsedTime = ellapsedTime;
 			this.animation = L.Util.requestAnimFrame(function(){
@@ -145,16 +152,18 @@ L.Motion.Animate = {
 				marker.addEventParent(this);
 			} else {
 				if (marker._icon && marker._icon.children.length) {
-					var needToRotateMarker = marker._icon.children[0].getAttribute("motion-base");
+					Array.from(marker._icon.children).forEach(function(icon) {
+						var needToRotateMarker = icon.getAttribute("motion-base");
 
-					if (needToRotateMarker) {
-						var motionMarkerOnLine = 0;
-						if (needToRotateMarker && !isNaN(+needToRotateMarker)) {
-							motionMarkerOnLine = +needToRotateMarker;
+						if (needToRotateMarker) {
+							var motionMarkerOnLine = 0;
+							if (needToRotateMarker && !isNaN(+needToRotateMarker)) {
+								motionMarkerOnLine = +needToRotateMarker;
+							}
+
+							icon.style.transform = "rotate(-" + Math.round(L.Motion.Utils.getAngle(prevPoint, nextPoint) + motionMarkerOnLine) +"deg)";
 						}
-
-						marker._icon.children[0].style.transform = "rotate(-" + Math.round(L.Motion.Utils.getAngle(prevPoint, nextPoint) + motionMarkerOnLine) +"deg)";
-					}
+					});
 				}
 			}
 
